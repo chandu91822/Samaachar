@@ -1,2 +1,0 @@
-# Samaachar
-Newspaper Automation Software

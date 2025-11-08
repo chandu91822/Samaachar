@@ -101,3 +101,4 @@ class PauseRequest(models.Model):
     reason = models.TextField(blank=True)
     approved = models.BooleanField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+

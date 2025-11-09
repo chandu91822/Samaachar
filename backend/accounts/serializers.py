@@ -57,9 +57,11 @@ class RegisterSerializer(serializers.Serializer):
                 sequence_hint=max_seq + 1
             )
         
-        # Create delivery stats if role is delivery_boy
-        if role == "delivery_boy":
+        # Create delivery stats if role is delivery
+        if role == "delivery":
             from api.models import DeliveryBoyStats
             DeliveryBoyStats.objects.create(delivery_person=user)
+            
+        # For CSE and SM roles, we don't need any additional setup
 
         return user

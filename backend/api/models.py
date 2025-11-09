@@ -30,21 +30,16 @@ class Subscription(models.Model):
 class Address(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     line = models.CharField(max_length=200)
-    sequence_hint = models.IntegerField(default=0)  # controls delivery order
+    sequence_hint = models.IntegerField(default=0)
 
 
 class DeliveryAssignment(models.Model):
     delivery_person = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="assigned_deliveries"
+        User, on_delete=models.CASCADE, related_name="assigned_deliveries"
     )
     customer = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="customer_deliveries"
+        User, on_delete=models.CASCADE, related_name="customer_deliveries"
     )
-
     address = models.ForeignKey(Address, on_delete=models.CASCADE)
     date = models.DateField(default=date.today)
     publications = models.JSONField(default=list)
@@ -54,7 +49,7 @@ class DeliveryAssignment(models.Model):
 
 class Bill(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
-    month = models.CharField(max_length=7)  # "2025-11"
+    month = models.CharField(max_length=7)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,7 +57,7 @@ class Bill(models.Model):
 
 class Payment(models.Model):
     bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name="payments")
-    mode = models.CharField(max_length=10)  # cash / cheque
+    mode = models.CharField(max_length=10)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     cheque_no = models.CharField(max_length=50, blank=True)
     receipt_no = models.CharField(max_length=50, unique=True)
@@ -101,4 +96,3 @@ class PauseRequest(models.Model):
     reason = models.TextField(blank=True)
     approved = models.BooleanField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-

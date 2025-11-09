@@ -2,47 +2,43 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Plans
+    # ---------------- Plans ----------------
     path("plans/", views.plans_list),
     path("plans/add/", views.plan_add),
-    path("plans/update/<int:id>/", views.plan_update),
-    path("plans/delete/<int:id>/", views.plan_delete),
+    path("plans/update/<int:pk>/", views.plan_update),
+    path("plans/delete/<int:pk>/", views.plan_delete),
 
-    # Customer
+    # ---------------- Customer ----------------
     path("customer/subscriptions/", views.customer_subscriptions),
-    path("customer/subscribe/", views.customer_subscribe_request),
-    path("customer/subscribe-requests/", views.customer_subscribe_requests),
+    path("customer/subscribe/", views.customer_subscribe),
     path("customer/change-request/", views.customer_change_request),
     path("customer/pause-request/", views.customer_pause_request),
-    path("customer/pause-requests/", views.customer_pause_requests),
-    path("customer/bills/current-month/", views.customer_current_bill),
-    path("payments/", views.payment_create),
 
     # Complaints
     path("customer/complaints/", views.complaint_create),
-    path("customer/my-complaints/", views.customer_complaints),
+
+    # ---------------- CSE Complaints ----------------
     path("cse/complaints/", views.cse_list_complaints),
     path("cse/complaints/<int:pk>/", views.cse_update_complaint_status),
-    path("cse/complaints/<int:pk>/reply/", views.cse_reply_complaint),
 
-    # Subscription Manager approvals
+    # ---------------- Subscription Manager ----------------
     path("sm/requests/subscribe/", views.sm_requests_subscribe),
+    path("sm/requests/subscribe/<int:pk>/approve/", views.sm_approve_subscribe),
+    path("sm/requests/subscribe/<int:pk>/reject/", views.sm_reject_subscribe),
+
     path("sm/requests/change/", views.sm_requests_change),
+    path("sm/requests/change/<int:pk>/approve/", views.sm_approve_change),
+    path("sm/requests/change/<int:pk>/reject/", views.sm_reject_change),
+
     path("sm/requests/pause/", views.sm_requests_pause),
-    path("sm/requests/<str:req_type>/<int:pk>/<str:action>/", views.sm_request_action),
+    path("sm/requests/pause/<int:pk>/approve/", views.sm_approve_pause),
+    path("sm/requests/pause/<int:pk>/reject/", views.sm_reject_pause),
 
-    # Manager
-    path("manager/stats/", views.manager_stats),
+    # ---------------- Manager ----------------
     path("manager/generate-bills/", views.manager_generate_bills),
-    path("manager/send-reminders/", views.manager_send_reminders),
-    path("manager/compute-commission/", views.manager_compute_commission),
-    path("manager/customers/", views.manager_all_customers),
-    path("manager/subscriptions/", views.manager_all_subscriptions),
-    path("manager/deliveries/", views.manager_all_deliveries),
-    path("manager/commission-report/", views.manager_commission_report),
+    path("manager/stats/", views.manager_stats),
 
-    # Delivery
+    # ---------------- Delivery ----------------
     path("delivery/today/summary/", views.delivery_today_summary),
-    path("delivery/today/route/", views.delivery_today_route),
     path("delivery/mark/<int:pk>/", views.delivery_mark_delivered),
 ]

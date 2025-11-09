@@ -51,7 +51,7 @@ setTimeout(() => {
     case "manager": nav("/manager"); break;
     case "customer": nav("/customer"); break;
     case "subscription": nav("/subscription"); break;
-    default: nav("/");
+    default: nav("/subscription");
   }
 }, 300);
 

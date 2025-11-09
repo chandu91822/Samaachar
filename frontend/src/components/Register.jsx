@@ -94,9 +94,9 @@ export default function Register() {
         <option value="">Select Role</option>
         <option value="manager">Manager</option>
         <option value="customer">Customer</option>
-        <option value="delivery_boy">Delivery Boy</option>
-        <option value="customer_service_executive">Customer Service Executive</option>
-        <option value="subscription_manager">Subscription Manager</option>
+        <option value="delivery">Delivery Person</option>
+        <option value="cse">Customer Service Executive</option>
+        <option value="sm">Subscription Manager</option>
       </select>
 
       {form.role === "customer" && (

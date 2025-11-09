@@ -35,6 +35,8 @@ class ComplaintSerializer(serializers.ModelSerializer):
 
 
 class BillSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source="customer.username", read_only=True)
+    
     class Meta:
         model = Bill
         fields = "__all__"
@@ -74,7 +76,10 @@ class PauseRequestSerializer(serializers.ModelSerializer):
 
 class DeliveryRouteSerializer(serializers.ModelSerializer):
     address_line = serializers.CharField(source="address.line", read_only=True)
+    house_number = serializers.CharField(source="address.house_number", read_only=True)
+    customer_name = serializers.CharField(source="customer.username", read_only=True)
+    sequence = serializers.IntegerField(source="address.sequence_hint", read_only=True)
 
     class Meta:
         model = DeliveryAssignment
-        fields = ["id", "publications", "status", "address_line"]
+        fields = ["id", "publications", "status", "address_line", "house_number", "customer_name", "sequence", "value", "commission"]

@@ -28,6 +28,7 @@ export default function AuthDialog({ open, onClose }) {
   const [rPass, setRPass] = useState('')
   const [rPass2, setRPass2] = useState('')
   const [rRole, setRRole] = useState('customer')
+  const [rHouseNumber, setRHouseNumber] = useState('')
 
   const handleLogin = async () => {
     setError(''); setLoading(true)
@@ -46,10 +47,25 @@ export default function AuthDialog({ open, onClose }) {
   const handleRegister = async () => {
     setError('')
     if (rPass !== rPass2) { setError('Passwords do not match'); return }
+    if (rRole === 'customer' && !rHouseNumber.trim()) { 
+      setError('House number is required for customers'); 
+      return 
+    }
     setLoading(true)
     try {
-      await registerApi({ username: rUser, email: rEmail, password: rPass, confirmPassword: rPass2, role: rRole })
+      const registerData = { 
+        username: rUser, 
+        email: rEmail, 
+        password: rPass, 
+        confirmPassword: rPass2, 
+        role: rRole 
+      }
+      if (rRole === 'customer' && rHouseNumber) {
+        registerData.house_number = rHouseNumber
+      }
+      await registerApi(registerData)
       setTab(0) // back to login
+      setRHouseNumber('') // Reset house number
     } catch (e) {
       setError(e?.response?.data?.detail || e?.message || 'Registration failed')
     } finally { setLoading(false) }
@@ -87,6 +103,16 @@ export default function AuthDialog({ open, onClose }) {
             <TextField select label="Role" value={rRole} onChange={e => setRRole(e.target.value)}>
               {ROLES.map(r => <MenuItem key={r} value={r}>{r.replaceAll('_',' ')}</MenuItem>)}
             </TextField>
+            {rRole === 'customer' && (
+              <TextField 
+                label="House Number" 
+                value={rHouseNumber} 
+                onChange={e => setRHouseNumber(e.target.value)} 
+                fullWidth 
+                required
+                placeholder="Enter your house number"
+              />
+            )}
             <Stack direction="row" gap={1}>
               <Button variant="outlined" onClick={() => setTab(0)} disabled={loading} fullWidth>Back to Login</Button>
               <Button variant="contained" onClick={handleRegister} disabled={loading} fullWidth>Register</Button>

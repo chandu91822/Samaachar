@@ -11,13 +11,16 @@ urlpatterns = [
     # Customer
     path("customer/subscriptions/", views.customer_subscriptions),
     path("customer/subscribe/", views.customer_subscribe_request),
+    path("customer/subscribe-requests/", views.customer_subscribe_requests),
     path("customer/change-request/", views.customer_change_request),
     path("customer/pause-request/", views.customer_pause_request),
+    path("customer/pause-requests/", views.customer_pause_requests),
     path("customer/bills/current-month/", views.customer_current_bill),
     path("payments/", views.payment_create),
 
     # Complaints
     path("customer/complaints/", views.complaint_create),
+    path("customer/my-complaints/", views.customer_complaints),
     path("cse/complaints/", views.cse_list_complaints),
     path("cse/complaints/<int:pk>/", views.cse_update_complaint_status),
     path("cse/complaints/<int:pk>/reply/", views.cse_reply_complaint),
@@ -33,6 +36,10 @@ urlpatterns = [
     path("manager/generate-bills/", views.manager_generate_bills),
     path("manager/send-reminders/", views.manager_send_reminders),
     path("manager/compute-commission/", views.manager_compute_commission),
+    path("manager/customers/", views.manager_all_customers),
+    path("manager/subscriptions/", views.manager_all_subscriptions),
+    path("manager/deliveries/", views.manager_all_deliveries),
+    path("manager/commission-report/", views.manager_commission_report),
 
     # Delivery
     path("delivery/today/summary/", views.delivery_today_summary),

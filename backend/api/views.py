@@ -49,7 +49,7 @@ def plans_list(request):
     return Response(PlanSerializer(qs, many=True).data)
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def plan_add(request):
     ser = PlanSerializer(data=request.data)
     if ser.is_valid():
@@ -195,6 +195,27 @@ def complaint_create(request):
         return Response({"error": "message required"}, status=400)
     c = Complaint.objects.create(customer=request.user, message=msg)
     return Response({"message": "Complaint submitted", "id": c.id})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def customer_subscribe_requests(request):
+    """Get all subscription requests for the current customer"""
+    qs = SubscribeRequest.objects.filter(customer=request.user).order_by("-created_at")
+    return Response(SubscribeRequestSerializer(qs, many=True).data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def customer_pause_requests(request):
+    """Get all pause requests for the current customer"""
+    qs = PauseRequest.objects.filter(customer=request.user).order_by("-created_at")
+    return Response(PauseRequestSerializer(qs, many=True).data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def customer_complaints(request):
+    """Get all complaints for the current customer with replies"""
+    qs = Complaint.objects.filter(customer=request.user).order_by("-created_at")
+    return Response(ComplaintSerializer(qs, many=True).data)
 
 # ---------------------------------------------------------
 # CSE
@@ -376,6 +397,97 @@ def manager_compute_commission(request):
 
     return Response(result)
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def manager_all_customers(request):
+    """Get all customers for manager dashboard"""
+    customers = User.objects.filter(profile__role="customer").select_related("profile")
+    data = []
+    for c in customers:
+        data.append({
+            "id": c.id,
+            "username": c.username,
+            "email": c.email,
+            "address": c.profile.address if hasattr(c, 'profile') else "",
+            "phone": c.profile.phone if hasattr(c, 'profile') else "",
+        })
+    return Response(data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def manager_all_subscriptions(request):
+    """Get all subscriptions for manager dashboard"""
+    qs = Subscription.objects.select_related("customer", "plan").order_by("-id")
+    data = []
+    for s in qs:
+        data.append({
+            "id": s.id,
+            "customer_id": s.customer.id,
+            "customer_name": s.customer.username,
+            "plan_id": s.plan.id,
+            "plan_title": s.plan.title,
+            "status": s.status,
+            "start_date": s.start_date,
+            "end_date": s.end_date,
+        })
+    return Response(data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def manager_all_deliveries(request):
+    """Get all deliveries for manager dashboard"""
+    qs = DeliveryAssignment.objects.select_related("delivery_person", "customer", "address").order_by("-date", "-id")
+    data = []
+    for d in qs:
+        data.append({
+            "id": d.id,
+            "delivery_person_id": d.delivery_person.id,
+            "delivery_person_name": d.delivery_person.username,
+            "customer_id": d.customer.id,
+            "customer_name": d.customer.username,
+            "address": d.address.line if d.address else "",
+            "date": d.date,
+            "publications": d.publications,
+            "status": d.status,
+            "value": float(d.value),
+        })
+    return Response(data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def manager_commission_report(request):
+    """Get commission report for all delivery persons (printable format)"""
+    month_prefix = date.today().strftime("%Y-%m")
+    result = []
+
+    delivery_users = User.objects.filter(profile__role="delivery")
+    for user in delivery_users:
+        assignments = DeliveryAssignment.objects.filter(
+            delivery_person=user,
+            date__startswith=month_prefix,
+            status="delivered",
+        )
+        
+        total_value = assignments.aggregate(s=Sum("value"))["s"] or Decimal("0")
+        commission = Decimal(total_value) * Decimal("0.025")
+        delivery_count = assignments.count()
+        
+        result.append({
+            "delivery_person_id": user.id,
+            "delivery_person_name": user.username,
+            "total_deliveries": delivery_count,
+            "total_value": float(total_value),
+            "commission_percentage": 2.5,
+            "commission_amount": float(commission),
+        })
+
+    return Response({
+        "month": month_prefix,
+        "report_date": date.today().isoformat(),
+        "delivery_persons": result,
+        "total_commission": sum(float(r["commission_amount"]) for r in result),
+    })
+
 # ---------------------------------------------------------
 # DELIVERY
 # ---------------------------------------------------------
@@ -399,19 +511,51 @@ def delivery_today_summary(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def delivery_today_route(request):
+    """Get delivery route for today, automatically listing customers by address"""
     today = date.today()
+    
+    # Get all customers with active subscriptions and addresses
+    # Group by address for delivery person
+    customers_with_addresses = User.objects.filter(
+        profile__role="customer",
+        customer_deliveries__delivery_person=request.user,
+        customer_deliveries__date=today
+    ).distinct()
+    
+    # Also get from DeliveryAssignment if exists
     qs = DeliveryAssignment.objects.filter(
         delivery_person=request.user, date=today
-    ).select_related("address").order_by("address__sequence_hint", "address__line", "id")
+    ).select_related("address", "customer").order_by("address__sequence_hint", "address__line", "id")
 
     data = []
+    seen_addresses = set()
+    
     for x in qs:
-        data.append({
-            "id": x.id,
-            "address": x.address.line,
-            "publications": x.publications,
-            "status": x.status,
-        })
+        addr_key = x.address.line
+        if addr_key not in seen_addresses:
+            seen_addresses.add(addr_key)
+            data.append({
+                "id": x.id,
+                "customer_id": x.customer.id,
+                "customer_name": x.customer.username,
+                "address": x.address.line,
+                "publications": x.publications,
+                "status": x.status,
+            })
+    
+    # If no assignments exist, list customers by address from their profile
+    if not data:
+        for customer in customers_with_addresses:
+            if hasattr(customer, 'profile') and customer.profile.address:
+                data.append({
+                    "id": None,
+                    "customer_id": customer.id,
+                    "customer_name": customer.username,
+                    "address": customer.profile.address,
+                    "publications": [],
+                    "status": "pending",
+                })
+    
     return Response(data)
 
 @api_view(["POST"])

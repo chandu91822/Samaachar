@@ -20,6 +20,9 @@ export default function CustomerDashboard() {
   const [mySubs, setMySubs] = useState([]);
   const [bill, setBill] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [subscribeRequests, setSubscribeRequests] = useState([]);
+  const [pauseRequests, setPauseRequests] = useState([]);
+  const [complaints, setComplaints] = useState([]);
 
   // dialogs
   const [pauseOpen, setPauseOpen] = useState(false);
@@ -45,14 +48,20 @@ export default function CustomerDashboard() {
   const loadAll = async () => {
     try {
       setLoading(true);
-      const [p, s, b] = await Promise.all([
+      const [p, s, b, subReqs, pauseReqs, comps] = await Promise.all([
         fetch(`${API}/plans/`).then(r=>r.json()),
         fetch(`${API}/customer/subscriptions/`, { headers: auth }).then(r=>r.json()),
         fetch(`${API}/customer/bills/current-month/`, { headers: auth }).then(r=>r.json()),
+        fetch(`${API}/customer/subscribe-requests/`, { headers: auth }).then(r=>r.json()),
+        fetch(`${API}/customer/pause-requests/`, { headers: auth }).then(r=>r.json()),
+        fetch(`${API}/customer/my-complaints/`, { headers: auth }).then(r=>r.json()),
       ]);
       setPlans(Array.isArray(p) ? p : []);
       setMySubs(Array.isArray(s) ? s : []);
       setBill(Object.keys(b || {}).length ? b : null);
+      setSubscribeRequests(Array.isArray(subReqs) ? subReqs : []);
+      setPauseRequests(Array.isArray(pauseReqs) ? pauseReqs : []);
+      setComplaints(Array.isArray(comps) ? comps : []);
     } catch (e) {
       console.error(e);
       notify("Failed to load data", "error");
@@ -265,6 +274,95 @@ export default function CustomerDashboard() {
               )}
             </Box>
 
+            {/* Subscription Requests Status */}
+            {subscribeRequests.length > 0 && (
+              <>
+                <Typography variant="h5" sx={{ mt: 5, mb: 2, fontWeight: 900 }}>
+                  Subscription Requests Status
+                </Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2, mb: 3 }}>
+                  {subscribeRequests.map((req) => (
+                    <Paper key={req.id} sx={{ p: 2, borderRadius: "16px", background: "#fff" }}>
+                      <Typography sx={{ fontWeight: 700 }}>Plan: {req.plan_title}</Typography>
+                      <Typography variant="body2" sx={{ color: "#666", mt: 1 }}>
+                        Status: {
+                          req.approved === null ? "⏳ Pending" :
+                          req.approved === true ? "✅ Approved" : "❌ Declined"
+                        }
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#666", fontSize: "0.85rem" }}>
+                        Requested: {new Date(req.created_at).toLocaleDateString()}
+                      </Typography>
+                    </Paper>
+                  ))}
+                </Box>
+              </>
+            )}
+
+            {/* Pause Requests Status */}
+            {pauseRequests.length > 0 && (
+              <>
+                <Typography variant="h5" sx={{ mt: 5, mb: 2, fontWeight: 900 }}>
+                  Pause Delivery Requests Status
+                </Typography>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2, mb: 3 }}>
+                  {pauseRequests.map((req) => (
+                    <Paper key={req.id} sx={{ p: 2, borderRadius: "16px", background: "#fff" }}>
+                      <Typography sx={{ fontWeight: 700 }}>
+                        {req.start_date} to {req.end_date}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#666", mt: 1 }}>
+                        Status: {
+                          req.approved === null ? "⏳ Pending" :
+                          req.approved === true ? "✅ Approved" : "❌ Declined"
+                        }
+                      </Typography>
+                      {req.reason && (
+                        <Typography variant="body2" sx={{ color: "#666", mt: 1 }}>
+                          Reason: {req.reason}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" sx={{ color: "#666", fontSize: "0.85rem", mt: 1 }}>
+                        Requested: {new Date(req.created_at).toLocaleDateString()}
+                      </Typography>
+                    </Paper>
+                  ))}
+                </Box>
+              </>
+            )}
+
+            {/* Complaints with Replies */}
+            {complaints.length > 0 && (
+              <>
+                <Typography variant="h5" sx={{ mt: 5, mb: 2, fontWeight: 900 }}>
+                  My Complaints & Responses
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+                  {complaints.map((comp) => (
+                    <Paper key={comp.id} sx={{ p: 3, borderRadius: "16px", background: "#fff" }}>
+                      <Typography sx={{ fontWeight: 700, mb: 1 }}>Complaint #{comp.id}</Typography>
+                      <Typography variant="body2" sx={{ color: "#666", mb: 2 }}>
+                        {comp.message}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: "#888", fontSize: "0.85rem", mb: 2 }}>
+                        Status: {comp.status} • Created: {new Date(comp.created_at).toLocaleDateString()}
+                      </Typography>
+                      {comp.last_reply && (
+                        <Box sx={{ mt: 2, p: 2, background: "#f5f5f5", borderRadius: "8px" }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
+                            Response from Customer Service:
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: "#333" }}>
+                            {comp.last_reply}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Paper>
+                  ))}
+                </Box>
+              </>
+            )}
+
             {/* Bill */}
             <Typography variant="h5" sx={{ mt: 5, mb: 2, fontWeight: 900 }}>
               This Month Bill
@@ -382,12 +480,17 @@ export default function CustomerDashboard() {
             variant="contained"
             onClick={async ()=>{
               try{
-                const r = await fetch(`${API}/cse/complaints/`, {
+                const r = await fetch(`${API}/customer/complaints/`, {
                   method:"POST",
                   headers:{ "Content-Type":"application/json", ...auth },
                   body: JSON.stringify({ message: complaintText }),
                 });
-                if(r.ok){ setComplaintOpen(false); setComplaintText(""); notify("Complaint submitted ✅"); }
+                if(r.ok){ 
+                  setComplaintOpen(false); 
+                  setComplaintText(""); 
+                  notify("Complaint submitted ✅"); 
+                  loadAll();
+                }
                 else notify("Failed to submit complaint","error");
               }catch{
                 notify("Failed to submit complaint","error");

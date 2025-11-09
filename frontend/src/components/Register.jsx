@@ -10,6 +10,7 @@ export default function Register() {
     email: "",
     password: "",
     role: "",
+    house_number: "",
   });
 
   const handleChange = (e) => {
@@ -85,18 +86,29 @@ export default function Register() {
       />
 
       <select
-  name="role"
-  value={form.role}
-  onChange={handleChange}
-  style={styles.input}
->
-  <option value="">Select Role</option>
-  <option value="manager">Manager</option>
-  <option value="customer">Customer</option>
-  <option value="delivery">Delivery Boy</option>
-  <option value="cse">Customer Service Executive</option>
-  <option value="sm">Subscription Manager</option>  {/* FIXED */}
-</select>
+        name="role"
+        value={form.role}
+        onChange={handleChange}
+        style={styles.input}
+      >
+        <option value="">Select Role</option>
+        <option value="manager">Manager</option>
+        <option value="customer">Customer</option>
+        <option value="delivery_boy">Delivery Boy</option>
+        <option value="customer_service_executive">Customer Service Executive</option>
+        <option value="subscription_manager">Subscription Manager</option>
+      </select>
+
+      {form.role === "customer" && (
+        <input
+          name="house_number"
+          placeholder="House Number (required for customers)"
+          value={form.house_number}
+          onChange={handleChange}
+          style={styles.input}
+          required
+        />
+      )}
 
 
       <Button

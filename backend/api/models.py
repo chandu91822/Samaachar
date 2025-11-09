@@ -29,8 +29,12 @@ class Subscription(models.Model):
 
 class Address(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
+    house_number = models.CharField(max_length=50)
     line = models.CharField(max_length=200)
     sequence_hint = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['sequence_hint']
 
 
 class DeliveryAssignment(models.Model):
@@ -45,6 +49,15 @@ class DeliveryAssignment(models.Model):
     publications = models.JSONField(default=list)
     status = models.CharField(max_length=20, default="pending")
     value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+
+
+class DeliveryBoyStats(models.Model):
+    delivery_person = models.OneToOneField(User, on_delete=models.CASCADE, related_name="delivery_stats")
+    total_deliveries = models.IntegerField(default=0)
+    total_commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Bill(models.Model):

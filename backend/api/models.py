@@ -97,7 +97,7 @@ class ChangeRequest(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
     action = models.CharField(max_length=20, choices=ACTIONS)
-    effective_date = models.DateField()
+    effective_date = models.DateField(null=True, blank=True)
     approved = models.BooleanField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
